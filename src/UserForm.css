@@ -1,0 +1,125 @@
+.input-container {
+  text-align: center;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.form-container {
+  width: 90%;
+  max-width: 500px;
+  margin: auto;
+}
+
+.form-group {
+  position: relative;
+  border: 1px solid #adabad;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  background-color: F2F4F6;
+  box-shadow: 2px 2px 10px rgba(22, 21, 21, 0.1);
+}
+
+.remove-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgb(214, 203, 203);
+  color: rgb(179, 101, 101);
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.3s ease;
+}
+
+.remove-btn:hover {
+  background: rgb(243, 7, 7);
+  color: white;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+  font-size: 14px;
+  color: #060b50;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 4px;
+  border: 1px solid #ebe3e3;
+  font-size: 14px;
+  transition: 0.3s ease;
+  background-color: #d5e3f0;
+}
+
+input:focus {
+  border-color: #010913;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+  outline: none;
+}
+
+.add-btn, .submit-btn {
+  padding: 12px 20px;
+  margin-top: 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  transition: 0.3s ease;
+  
+}
+
+.add-btn {
+  background: #dadeeb;
+  /* ; rgb(214, 203, 203); */
+  color:#334dc0;
+  margin-right: 10px;
+  float: right; /* يجعل الزر في اليمين */
+  width: 40px; /* زيادة العرض ليكون النص واضحًا */
+  height: 40px; /* ضبط الارتفاع لموازنة الزر */
+  display: flex;
+  justify-content: center; /* توسيط النص أفقيًا */
+  align-items: center; /* توسيط النص عموديًا */
+  border: none; /* إزالة الحدود */
+  font-size: 18px; /* تكبير النص */
+  font-weight: bold;
+  cursor: pointer;
+}
+
+
+.add-btn:hover {
+  background-color: #376faa;
+}
+
+.submit-btn {
+  background-color: #334dc0;
+  color: white;
+}
+
+.submit-btn:hover {
+  background-color: #658ab3;
+}
+
+.file-info {
+  margin-top: 10px;
+  font-style: italic;
+  color: #555;
+}
+
+@media (max-width: 600px) {
+  .form-container {
+    width: 100%;
+  }
+
+  .add-btn, .submit-btn {
+    width: 100%;
+  }
+}

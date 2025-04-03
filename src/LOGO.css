@@ -1,0 +1,36 @@
+/* تنسيق الصور في الشريط العلوي */
+/* .logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px; /* المسافة بين الصور */
+/* }
+
+.HADEED {
+    width: 150px;  
+    height: auto;
+    margin-left: 90%;
+    margin-top: 1%;
+}
+
+.EHSS {
+    width: 150px;  /* تحديد عرض الشعار الثاني 
+    height: auto;
+}*/
+.logo-container {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+  }
+  .logo {
+    width: 300px;
+    height: auto;
+    /* width: 150px; */
+    /* height: auto; */
+    /* margin-left: 90%; */
+    /* margin-top: 1%; */
+    position: absolute;
+    top: -50px;
+    right: -100px;
+  }
+  
