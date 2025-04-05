@@ -28,7 +28,11 @@ function EnterDate() {
           ...item,
           dateObject: new Date(item.dateObject)
         }));
-        setSelectedDates(datesWithObjects);
+        // Sort the dates after loading
+        const sortedDates = [...datesWithObjects].sort((a, b) => 
+          a.dateObject.getTime() - b.dateObject.getTime()
+        );
+        setSelectedDates(sortedDates);
       } catch (e) {
         console.error("Error parsing saved dates:", e);
       }
@@ -49,7 +53,7 @@ function EnterDate() {
     if (date) {
       // Check if date is already selected
       const alreadySelected = selectedDates.some(
-        item => item.dateObject && 
+        item => item.dateObject &&
                item.dateObject.getFullYear() === date.getFullYear() &&
                item.dateObject.getMonth() === date.getMonth() &&
                item.dateObject.getDate() === date.getDate()
@@ -62,7 +66,11 @@ function EnterDate() {
           dateObject: date // Keep a Date object for UI display
         };
         
-        setSelectedDates([...selectedDates, newDateEntry]);
+        // Add the new date and sort the array
+        const updatedDates = [...selectedDates, newDateEntry].sort((a, b) => 
+          a.dateObject.getTime() - b.dateObject.getTime()
+        );
+        setSelectedDates(updatedDates);
       }
     }
   };
@@ -77,7 +85,7 @@ function EnterDate() {
   };
   
   return (
-    <div style={{textAlign:"center"}}>
+    <div className="date-picker-container">
       <h4 className="h4">Select Dates for GetPass</h4>
       <DatePicker
         selected={null}
@@ -86,27 +94,31 @@ function EnterDate() {
         minDate={new Date()}
         placeholderText="📅 Choose weekdays"
         shouldCloseOnSelect={false}
-        className="date2"
         locale={ar}
         dateFormat="dd/MM/yyyy"
       />
       
       <h4 className="h4">Selected Dates:</h4>
-      <ul className="ull" >
+      <ul className="ull">
         {selectedDates.map((dateEntry, index) => (
-          <li key={index} className="lli" >
-            📅 {dateEntry.dateObject && format(dateEntry.dateObject, "EEEE, dd/MM/yyyy", { locale: ar })}
+          <li key={index} className="lli">
+            <div className="date-text">
+              📅 {dateEntry.dateObject && format(dateEntry.dateObject, "EEEE, dd/MM/yyyy", { locale: ar })}
+            </div>
             <button
               className="delete-btn"
               onClick={() => removeDate(index)}
               title="حذف"
-            > ❌ </button>
+              aria-label="Delete date"
+            > 
+              ❌ 
+            </button>
           </li>
         ))}
       </ul>
       
       {selectedDates.length === 0 && 
-        <p style={{color: "red"}}>Please select at least one date for the GetPass document</p>
+        <p className="date-warning">Please select at least one date for the GetPass document</p>
       }
     </div>
   );

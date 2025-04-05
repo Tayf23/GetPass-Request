@@ -1,175 +1,125 @@
+.date-picker-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: 20px 0;
+}
+
 .delete-btn {
   position: relative;
   border: none;
-  background-color: #dadeeb;
+  background-color: transparent;
   cursor: pointer;
   font-size: 16px;
+  margin-right: 5px;
 }
-.h4{
-  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
-  font-size: 20px;
-  padding: 10px;
-  text-align: center;
-}
-/* تنسيق القائمة */
 
+.h4 {
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  padding: 10px 0;
+  text-align: center;
+  color: #334dc0;
+  margin: 10px 0;
+}
+
+/* تنسيق القائمة */
 .ull {
-  list-style-type: none; 
+  list-style-type: none;
   padding: 0;
   display: flex;
-  flex-direction: column; 
-  text-align: right;
-  align-items: center;
-  /* background-color :green; */
+  flex-direction: column;
+  width: 100%;
+  margin: 0;
 }
 
 /* تنسيق عناصر القائمة */
 .lli {
-  align-items: center; 
-  list-style-type: none;
-  padding: 10px;
-  border-radius: 5px;
-  border: 3px solid #f3efef;
-  font-size: 19px;
-  /* font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; */
-  cursor: pointer;
-  width: 20%; /* عرض مناسب للعناصر */
-  text-align: right; /* توسيط النص داخل العنصر */
-  margin: 5px 0; /* تباعد بين العناصر */
- /* background-color :blue; */
- font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
-
-}
-
-
-.date2{
-  width: 50%;
-}
-.react-datepicker__input-container input {
-  width: 500px;  /* عرض المربع */
-  height: 40px;  /* ارتفاع المربع */
-  font-size: 18px; /* حجم الخط داخل المربع */
-  padding: 8px; /* تعديل الهوامش الداخلية */
-  text-align: center; /* محاذاة النص في المنتصف */
-  background-color: #fdfcfd;
-  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
-}
-
-
-/*
-.delete-btn::after {
-  content: "";
-  position: absolute;
-  bottom: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgb(30, 192, 30);
-  color: rgb(40, 69, 148);
-  padding: 5px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;} 
-} */
-/*
-.selected-dates li {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f512cf;
-  padding: 95px;
-  margin: 52px auto;
+  padding: 10px 15px;
   border-radius: 5px;
-  max-width: 200px;
+  border: 1px solid #d5e3f0;
+  font-size: 15px;
+  width: 100%;
+  text-align: right;
+  margin: 5px 0;
+  background-color: #f2f4f6;
+  box-sizing: border-box;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
 }
 
-.date-picker-container {
+.date-text {
+  flex: 1;
+  text-align: right;
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
+  max-width: 300px;
+}
+
+.react-datepicker__input-container {
+  width: 100%;
+}
+
+.react-datepicker__input-container input {
+  width: 100%;
+  height: 40px;
+  font-size: 15px;
+  padding: 8px 12px;
   text-align: center;
-  font-family: Arial, sans-serif;
-  padding: 20px;
-  
+  background-color: #d5e3f0;
+  border: 1px solid #ebe3e3;
+  border-radius: 4px;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  box-sizing: border-box;
 }
 
-.custom-date-picker {
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #a70f0f;
-  font-size: 16px;
-  width: 200px;
-  cursor: pointer;
+.date-warning {
+  color: #dc3545;
+  margin: 10px 0;
+  font-size: 14px;
+  text-align: center;
 }
-.custom-date-picker:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
-  outline: none;
-} */
 
-/* .remove-btn:hover {
-  background: rgb(43, 184, 97);
-}  
-  
-.remove-btn {
-  background: rgb(21, 161, 47);
-  color: rgb(31, 27, 27);
-  border: none;
-  padding: 5px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 12px;
-}
-*/
-
-/* تنسيق عام للفورم
-div {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    margin-top: 20px;
+/* Responsive styles */
+@media (max-width: 768px) {
+  .lli {
+    font-size: 14px;
+    padding: 8px 12px;
   }
   
-  label {
-    font-size: 1.2em;
-    font-weight: bold;
-    margin-bottom: 10px;
-    display: block;
-    color: #333;
+  .h4 {
+    font-size: 16px;
   }
   
   .react-datepicker__input-container input {
-    padding: 8px 12px;
-    font-size: 1em;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    width: 100%;
-    margin-bottom: 20px;
+    height: 38px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lli {
+    font-size: 13px;
+    padding: 8px 10px;
   }
   
-  .react-datepicker__input-container input:focus {
-    outline: none;
-    border-color: #007bff;
+  .h4 {
+    font-size: 15px;
+    padding: 8px 0;
   }
   
-  h3 {
-    font-size: 1.2em;
-    color: #444;
+  .react-datepicker__input-container input {
+    height: 36px;
+    font-size: 13px;
+    padding: 6px 10px;
   }
   
-  ul {
-    list-style-type: none;
-    padding-left: 0;
+  .date-warning {
+    font-size: 13px;
   }
-  
-  ul li {
-    padding: 5px;
-    background-color: #e9f7ff;
-    border-radius: 4px;
-    margin-bottom: 8px;
-    font-size: 1em;
-  }
-  
-  ul li:hover {
-    background-color: #d0e8f9;
-  }
-  */
+}

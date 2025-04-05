@@ -1,23 +1,12 @@
-
 import LOGO from "./LOGO";
 import UserForm from "./UserForm";
-// import SimpleForm from "./Forms";
-import EnterDate from "./EnterDate";
+import './App.css';
+
 function App() {
   return (
-    <div className="body">
+    <div className="app-container">
       <LOGO />
-     {/* <SimpleForm /> */}
-     <br />
-     <br />
-     <br />
-     <br />
-     <UserForm />
-    {/* <EnterDate /> */}
-    
-    {/* <button type="submit" className="submit-btn">
-          Submit
-    </button> */}
+      <UserForm />
     </div>
   );
 }

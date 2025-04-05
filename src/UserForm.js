@@ -45,7 +45,7 @@ export default function UserForm() {
 
   // Remove a form section
   const removeForm = (index) => {
-    if (window.confirm("Are you sure you want to delete this form?")) {
+    if (window.confirm("Are you sure you want to delete this visitor?")) {
       setForms(forms.filter((_, i) => i !== index));
     }
   };
@@ -91,8 +91,8 @@ export default function UserForm() {
       };
       
       // Send data to backend
-      // const response = await axios.post('http://localhost:8000/generate-getpass/', apiData, {
       const response = await axios.post('https://getpass-backend.onrender.com:8000/generate-getpass/', apiData, {
+      // const response = await axios.post('http://localhost:8000/generate-getpass/', apiData, {
         responseType: 'blob' // Important for receiving binary data
       });
       
@@ -136,6 +136,7 @@ export default function UserForm() {
                 type="button"
                 className="remove-btn"
                 onClick={() => removeForm(index)}
+                aria-label="Remove visitor"
               >
                 ❌
               </button>
@@ -148,7 +149,7 @@ export default function UserForm() {
               value={form.name}
               onChange={(e) => handleChanges(index, e)}
               required
-              dir="rtl"
+              // dir="rtl"
             />
             
             <label>Nationality*</label>
@@ -159,7 +160,7 @@ export default function UserForm() {
               value={form.nationality}
               onChange={(e) => handleChanges(index, e)}
               required
-              dir="rtl"
+              // dir="rtl"
             />
             
             <label>ID Number*</label>
@@ -174,12 +175,19 @@ export default function UserForm() {
           </div>
         ))}
         
-        <button type="button" className="add-btn" onClick={addForm}>
-          Add Visitor
-        </button>
-
+        <div className="buttons-container">
+          <button 
+            type="button" 
+            className="add-btn" 
+            onClick={addForm}
+            aria-label="Add another visitor"
+          >
+            +
+          </button>
+        </div>
+        
         <EnterDate />
-
+        
         <button type="submit" className="submit-btn" disabled={loading}>
           {loading ? "Processing..." : "Generate Document"}
         </button>
