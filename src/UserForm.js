@@ -13,8 +13,17 @@ export default function UserForm() {
   // State for error messages
   const [error, setError] = useState(null);
   
+  // State for input field errors
+  const [inputErrors, setInputErrors] = useState([{ name: "", nationality: "" }]);
+  
   // State for success message
   const [successMessage, setSuccessMessage] = useState(null);
+  
+  // Function to check if text contains only Arabic characters
+  const isArabicOnly = (text) => {
+    const arabicPattern = /^[\u0600-\u06FF\s]+$/;
+    return arabicPattern.test(text);
+  };
   
   // Get selected dates from localStorage (set by EnterDate component)
   const getSelectedDates = () => {
@@ -29,6 +38,27 @@ export default function UserForm() {
   const handleChanges = (index, e) => {
     const { name, value } = e.target;
     const newForms = [...forms];
+    const newInputErrors = [...inputErrors];
+    
+    // For name and nationality fields, check if it's Arabic only
+    if ((name === 'name' || name === 'nationality') && value !== "") {
+      if (!isArabicOnly(value)) {
+        newInputErrors[index] = {
+          ...newInputErrors[index],
+          [name]: "Please enter Arabic text only"
+        };
+      } else {
+        newInputErrors[index] = {
+          ...newInputErrors[index],
+          [name]: ""
+        };
+      }
+    } else {
+      newInputErrors[index] = {
+        ...newInputErrors[index],
+        [name]: ""
+      };
+    }
     
     newForms[index] = {
       ...newForms[index],
@@ -36,17 +66,20 @@ export default function UserForm() {
     };
     
     setForms(newForms);
+    setInputErrors(newInputErrors);
   };
 
   // Add new form section
   const addForm = () => {
     setForms([...forms, { name: "", nationality: "", idNumber: "" }]);
+    setInputErrors([...inputErrors, { name: "", nationality: "" }]);
   };
 
   // Remove a form section
   const removeForm = (index) => {
     if (window.confirm("Are you sure you want to delete this visitor?")) {
       setForms(forms.filter((_, i) => i !== index));
+      setInputErrors(inputErrors.filter((_, i) => i !== index));
     }
   };
 
@@ -62,9 +95,37 @@ export default function UserForm() {
     window.URL.revokeObjectURL(url);
   };
 
+  // Validate that all name and nationality inputs are in Arabic
+  const validateArabicInputs = () => {
+    let isValid = true;
+    const newInputErrors = [...inputErrors];
+    
+    forms.forEach((form, index) => {
+      if (!isArabicOnly(form.name) && form.name !== "") {
+        newInputErrors[index].name = "Please enter Arabic text only";
+        isValid = false;
+      }
+      
+      if (!isArabicOnly(form.nationality) && form.nationality !== "") {
+        newInputErrors[index].nationality = "Please enter Arabic text only";
+        isValid = false;
+      }
+    });
+    
+    setInputErrors(newInputErrors);
+    return isValid;
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check if all name and nationality inputs are Arabic
+    if (!validateArabicInputs()) {
+      setError("Please correct the errors in the form");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
@@ -92,8 +153,9 @@ export default function UserForm() {
       
       // Send data to backend
       const response = await axios.post('https://getpass-backend.onrender.com:8000/generate-getpass/', apiData, {
-      // const response = await axios.post('http://localhost:8000/generate-getpass/', apiData, {
+        // const response = await axios.post('http://localhost:8000/generate-getpass/', apiData, {
         responseType: 'blob' // Important for receiving binary data
+
       });
       
       // Determine file type and name based on Content-Type header
@@ -141,36 +203,43 @@ export default function UserForm() {
                 ❌
               </button>
             )}
-            <label>Name*</label>
+            <label>Name (Arabic only)*</label>
             <input
               type="text"
               name="name"
-              placeholder="Enter Full Name"
+              placeholder="أدخل الاسم الكامل"
               value={form.name}
               onChange={(e) => handleChanges(index, e)}
               required
-              // dir="rtl"
+              dir="rtl"
             />
+            {inputErrors[index].name && (
+              <div className="input-error" style={{color: "red"}}>{inputErrors[index].name}</div>
+            )}
             
-            <label>Nationality*</label>
+            <label>Nationality (Arabic only)*</label>
             <input
               type="text"
               name="nationality"
-              placeholder="Enter Nationality"
+              placeholder="أدخل الجنسية"
               value={form.nationality}
               onChange={(e) => handleChanges(index, e)}
               required
-              // dir="rtl"
+              dir="rtl"
             />
+            {inputErrors[index].nationality && (
+              <div className="input-error" style={{color: "red"}}>{inputErrors[index].nationality}</div>
+            )}
             
             <label>ID Number*</label>
             <input
               type="text"
               name="idNumber"
-              placeholder="Enter ID Number"
+              placeholder="ادخل رقم الهوية/ الإقامة/ الجواز"
               value={form.idNumber}
               onChange={(e) => handleChanges(index, e)}
               required
+              dir="rtl"
             />
           </div>
         ))}
@@ -188,7 +257,13 @@ export default function UserForm() {
         
         <EnterDate />
         
-        <button type="submit" className="submit-btn" disabled={loading}>
+        <button 
+          type="submit" 
+          className="submit-btn" 
+          disabled={loading || forms.some((_, index) => 
+            inputErrors[index].name || inputErrors[index].nationality
+          )}
+        >
           {loading ? "Processing..." : "Generate Document"}
         </button>
         
