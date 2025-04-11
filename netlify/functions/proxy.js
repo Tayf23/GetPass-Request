@@ -7,7 +7,7 @@ exports.handler = async function(event, context) {
     const method = event.httpMethod.toLowerCase();
     
     // Get the API endpoint
-    const API_ENDPOINT = 'http://13.48.71.148:8000';
+    const API_ENDPOINT = 'http://13.48.71.148';
     const url = `${API_ENDPOINT}${path}`;
     
     // Get request body if any
