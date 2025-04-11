@@ -59,7 +59,7 @@ input {
   font-size: 14px;
   transition: 0.3s ease;
   background-color: #d5e3f0;
-  box-sizing: border-box; /* Important for mobile: ensures padding doesn't add to width */
+  box-sizing: border-box;   /* Important for mobile: ensures padding doesn't add to width */
 }
 
 input:focus {
