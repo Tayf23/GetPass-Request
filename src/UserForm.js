@@ -152,19 +152,13 @@ export default function UserForm() {
       };
       
       // Send data to backend
-      // const response = await axios.post('http://13.48.71.148:8000/generate-getpass/', apiData, {
-      //   // const response = await axios.post('http://localhost:8000/generate-getpass/', apiData, {
-      //   responseType: 'blob' // Important for receiving binary data
+      const response = await axios.post('https://13.48.71.148/generate-getpass/', apiData, {
+        // const response = await axios.post('http://localhost:8000/generate-getpass/', apiData, {
+        responseType: 'blob' // Important for receiving binary data
 
-      // });
-
-      const API_URL = 'http://13.48.71.148:8000/generate-getpass/';
-      const CORS_PROXY = 'https://corsproxy.io/?';
-
-      const response = await axios.post(CORS_PROXY + encodeURIComponent(API_URL), apiData, {
-        responseType: 'blob'
       });
-      
+
+
       // Determine file type and name based on Content-Type header
       const contentType = response.headers['content-type'];
       let fileName;

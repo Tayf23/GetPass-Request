@@ -63,7 +63,7 @@ function EnterDate() {
         // Store just the date in YYYY-MM-DD format for the API to avoid timezone issues
         const newDateEntry = {
           date: formatDateForAPI(date),
-          dateObject: date // Keep a Date object for UI display
+          dateObject: date //  Keep a Date object for UI display
         };
         
         // Add the new date and sort the array
