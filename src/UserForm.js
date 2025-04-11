@@ -152,7 +152,7 @@ export default function UserForm() {
       };
       
       // Send data to backend
-      const response = await axios.post('https://13.48.71.148/generate-getpass/', apiData, {
+      const response = await axios.post('/api/generate-getpass/', apiData, {
         // const response = await axios.post('http://localhost:8000/generate-getpass/', apiData, {
         responseType: 'blob' // Important for receiving binary data
 
