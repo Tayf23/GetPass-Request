@@ -3,7 +3,7 @@ const axios = require('axios');
 exports.handler = async function(event, context) {
   console.log('Request path:', event.path);
   console.log('Request method:', event.httpMethod);
-  
+
   try {
     // Get the path from the request
     let path = '';
@@ -14,7 +14,7 @@ exports.handler = async function(event, context) {
     } else {
       path = event.path.replace('/.netlify/functions/proxy', '');
     }
-    
+
     const method = event.httpMethod.toLowerCase();
     
     // Use port 443 (HTTPS) instead of 8000
@@ -43,18 +43,19 @@ exports.handler = async function(event, context) {
       method,
       url,
       data: body,
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Accept': '*/*'
       },
       validateStatus: () => true, // Accept all status codes
       timeout: 60000, // Increased timeout to 60 seconds
+      responseType: path.includes('/download-file/') ? 'arraybuffer' : 'json', // Use arraybuffer for file downloads
     });
     
     console.log('Response status:', response.status);
     console.log('Response headers:', response.headers);
     
-    // For binary file responses
+    // For binary file responses (direct file downloads)
     if (response.headers['content-type'] && (
       response.headers['content-type'].includes('application/vnd.openxmlformats') ||
       response.headers['content-type'].includes('application/octet-stream') ||
@@ -64,25 +65,26 @@ exports.handler = async function(event, context) {
         statusCode: response.status,
         headers: {
           'Content-Type': response.headers['content-type'],
-          'Content-Disposition': response.headers['content-disposition'] || 'attachment',
+          'Content-Disposition': response.headers['content-disposition'] || 'attachment; filename="document.docx"',
         },
         body: Buffer.from(response.data).toString('base64'),
         isBase64Encoded: true
       };
     }
     
-    // For JSON responses
+    // For JSON responses that contain file URLs (multiple files)
     if (response.headers['content-type'] && 
         response.headers['content-type'].includes('application/json')) {
       
-      // Return the JSON as is
+      // If the JSON contains file URLs, pass it through unmodified
+      // The frontend will handle downloading the files
       return {
         statusCode: response.status,
         headers: {
           'Content-Type': 'application/json',
         },
         body: typeof response.data === 'object' ? 
-          JSON.stringify(response.data) : response.data
+              JSON.stringify(response.data) : response.data
       };
     }
     
@@ -92,9 +94,9 @@ exports.handler = async function(event, context) {
       headers: {
         'Content-Type': response.headers['content-type'] || 'text/plain',
       },
-      body: typeof response.data === 'object' ? 
-        JSON.stringify(response.data) : 
-        (typeof response.data === 'string' ? response.data : '')
+      body: typeof response.data === 'object' ?
+            JSON.stringify(response.data) :
+            (typeof response.data === 'string' ? response.data : '')
     };
     
   } catch (error) {
@@ -109,7 +111,7 @@ exports.handler = async function(event, context) {
     
     return {
       statusCode: 500,
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         error: 'An error occurred connecting to the API',
         message: error.message,
         stack: error.stack

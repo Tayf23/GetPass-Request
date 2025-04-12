@@ -188,77 +188,64 @@ export default function UserForm() {
   //   }
   // };
 
-  // Handle form submission
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  // Check if all name and nationality inputs are Arabic
-  if (!validateArabicInputs()) {
-    setError("Please correct the errors in the form");
-    return;
-  }
-  
-  setLoading(true);
-  setError(null);
-  setSuccessMessage(null);
-  
-  try {
-    const selectedDates = getSelectedDates();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    if (selectedDates.length === 0) {
-      setError("Please select at least one date before submitting.");
-      setLoading(false);
+    // Check if all name and nationality inputs are Arabic
+    if (!validateArabicInputs()) {
+      setError("Please correct the errors in the form");
       return;
     }
     
-    // Format data for the API
-    const apiData = {
-      people: forms.map(form => ({
-        name: form.name,
-        nationality: form.nationality,
-        id_number: form.idNumber
-      })),
-      dates: selectedDates.map(dateEntry => ({
-        date: dateEntry.date
-      }))
-    };
+    setLoading(true);
+    setError(null);
+    setSuccessMessage(null);
     
-    // For single dates, use blob response type directly
-    if (selectedDates.length === 1) {
-      const response = await axios.post('/api/generate-getpass/', apiData, {
-    responseType: 'blob'
-      });
+    try {
+      const selectedDates = getSelectedDates();
       
-      // Determine file type and name based on Content-Type header
-      const contentType = response.headers['content-type'];
-      let fileName;
-      
-      if (contentType === 'application/pdf') {
-        fileName = 'getpass.pdf';
-        setSuccessMessage("PDF generated successfully!");
-      } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        fileName = 'getpass.docx';
-        setSuccessMessage("Word document generated successfully!");
-      } else if (contentType === 'application/zip') {
-        fileName = 'getpass_documents.zip';
-        setSuccessMessage("ZIP file with Word documents generated successfully!");
-      } else {
-        fileName = 'getpass_document';
-        setSuccessMessage("Document generated successfully!");
+      if (selectedDates.length === 0) {
+        setError("Please select at least one date before submitting.");
+        setLoading(false);
+        return;
       }
       
-      // Download the file
-      downloadFile(response.data, fileName);
-    } 
-    // For multiple dates, handle JSON response with file links
-    else {
-      // First request with regular response type to get JSON
-      const response = await axios.post('/api/generate-getpass/', apiData);
+      // Format data for the API
+      const apiData = {
+        people: forms.map(form => ({
+          name: form.name,
+          nationality: form.nationality,
+          id_number: form.idNumber
+        })),
+        dates: selectedDates.map(dateEntry => ({
+          date: dateEntry.date
+        }))
+      };
       
-      // Check if response contains files array
-      if (response.data && response.data.files && Array.isArray(response.data.files)) {
+      // Make the API request
+      const response = await axios.post('/api/generate-getpass/', apiData, {
+        responseType: selectedDates.length === 1 ? 'blob' : 'json'
+      });
+      
+      // If response is a blob (single file)
+      if (response.data instanceof Blob) {
+        const contentType = response.headers['content-type'];
+        let fileName = 'getpass.docx';
+        
+        if (contentType === 'application/pdf') {
+          fileName = 'getpass.pdf';
+          setSuccessMessage("PDF generated successfully!");
+        } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          fileName = 'getpass.docx';
+          setSuccessMessage("Word document generated successfully!");
+        }
+        
+        // Download the file
+        downloadFile(response.data, fileName);
+      } 
+      // If response is JSON with file links (multiple files)
+      else if (response.data && response.data.files && Array.isArray(response.data.files)) {
         const { files } = response.data;
-        const baseUrl = response.data.baseUrl || '/api';
         
         setSuccessMessage(`${files.length} documents generated successfully. Downloads starting...`);
         
@@ -266,11 +253,8 @@ const handleSubmit = async (e) => {
         files.forEach((file, index) => {
           setTimeout(async () => {
             try {
-              // Construct full URL if needed
-              const fileUrl = file.url.startsWith('http') ? file.url : `${baseUrl}${file.url}`;
-              
               // Get the file
-              const fileResponse = await axios.get(fileUrl, {
+              const fileResponse = await axios.get(`/api${file.url}`, {
                 responseType: 'blob'
               });
               
@@ -283,29 +267,28 @@ const handleSubmit = async (e) => {
         });
       } else {
         // Handle unexpected response format
-        console.error("Unexpected response format:", response.data);
+        console.error("Unexpected response format:", response);
         setError("Received an invalid response from the server.");
       }
+    } catch (error) {
+      console.error("Error submitting the form:", error);
+      
+      let errorMessage = "An error occurred while processing your request.";
+      
+      if (error.response) {
+        errorMessage += ` Server returned: ${error.response.status}`;
+        console.log("Response data:", error.response.data);
+      } else if (error.request) {
+        errorMessage += " No response received from server.";
+      } else {
+        errorMessage += ` ${error.message}`;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error submitting the form:", error);
-    
-    let errorMessage = "An error occurred while processing your request.";
-    
-    if (error.response) {
-      errorMessage += ` Server returned: ${error.response.status}`;
-      console.log("Response data:", error.response.data);
-    } else if (error.request) {
-      errorMessage += " No response received from server.";
-    } else {
-      errorMessage += ` ${error.message}`;
-    }
-    
-    setError(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="input-container">
