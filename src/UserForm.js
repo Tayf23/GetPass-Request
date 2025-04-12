@@ -221,9 +221,10 @@ export default function UserForm() {
           date: dateEntry.date
         }))
       };
-
-      console.log("Api data", apiData, apiData.dates);
       
+      console.log("Api data", apiData, apiData.dates);
+
+
       // Make the API request - always use blob response type for direct file downloads
       const response = await axios.post('/api/generate-getpass/', apiData, {
         responseType: 'blob'
@@ -260,9 +261,9 @@ export default function UserForm() {
                   // Track completed downloads
                   downloadCount++;
                   
-                  // Clear selected dates after all downloads are complete
+                  // // Clear selected dates after all downloads are complete
                   if (downloadCount === files.length) {
-                    clearSelectedDates();
+                  //   clearSelectedDates();
                     
                     // Reset form after successful submission
                     setForms([{ name: "", nationality: "", idNumber: "" }]);
@@ -308,7 +309,7 @@ export default function UserForm() {
           setSuccessMessage(`Document '${fileName}' generated successfully!`);
           
           // Clear selected dates after successful download
-          clearSelectedDates();
+          // clearSelectedDates();
           
           // Reset form after successful submission
           setForms([{ name: "", nationality: "", idNumber: "" }]);
@@ -337,7 +338,7 @@ export default function UserForm() {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="input-container">
       <h2>Enter Your GetPass Information</h2>
