@@ -23,36 +23,36 @@ function EnterDate() {
   const [selectedDates, setSelectedDates] = useState([]);
   
   // Load any previously selected dates from localStorage
-  useEffect(() => {
-    const savedDates = localStorage.getItem('selectedDates');
-    if (savedDates) {
-      try {
-        const parsedDates = JSON.parse(savedDates);
-        // Convert string dates back to Date objects
-        const datesWithObjects = parsedDates.map(item => ({
-          ...item,
-          dateObject: new Date(item.dateObject)
-        }));
-        // Sort the dates after loading
-        const sortedDates = [...datesWithObjects].sort((a, b) =>
-          a.dateObject.getTime() - b.dateObject.getTime()
-        );
-        setSelectedDates(sortedDates);
-      } catch (e) {
-        console.error("Error parsing saved dates:", e);
-      }
-    }
-  }, []);
+  // useEffect(() => {
+  //   const savedDates = localStorage.getItem('selectedDates');
+  //   if (savedDates) {
+  //     try {
+  //       const parsedDates = JSON.parse(savedDates);
+  //       // Convert string dates back to Date objects
+  //       const datesWithObjects = parsedDates.map(item => ({
+  //         ...item,
+  //         dateObject: new Date(item.dateObject)
+  //       }));
+  //       // Sort the dates after loading
+  //       const sortedDates = [...datesWithObjects].sort((a, b) =>
+  //         a.dateObject.getTime() - b.dateObject.getTime()
+  //       );
+  //       setSelectedDates(sortedDates);
+  //     } catch (e) {
+  //       console.error("Error parsing saved dates:", e);
+  //     }
+  //   }
+  // }, []);
   
   // Save selected dates to localStorage whenever they change
-  useEffect(() => {
-    // Create a copy that can be serialized
-    const datesToSave = selectedDates.map(item => ({
-      ...item,
-      dateObject: item.dateObject.toISOString()
-    }));
-    localStorage.setItem('selectedDates', JSON.stringify(datesToSave));
-  }, [selectedDates]);
+  // useEffect(() => {
+  //   // Create a copy that can be serialized
+  //   const datesToSave = selectedDates.map(item => ({
+  //     ...item,
+  //     dateObject: item.dateObject.toISOString()
+  //   }));
+  //   localStorage.setItem('selectedDates', JSON.stringify(datesToSave));
+  // }, [selectedDates]);
   
   const handleDateChange = (date) => {
     if (date) {
