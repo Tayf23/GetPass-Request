@@ -130,14 +130,28 @@ export default function UserForm() {
     setSuccessMessage(null);
     
     try {
-      const selectedDates = getSelectedDates();
+      // Get dates directly from the page instead of using getSelectedDates()
+      // You can either modify this to access the dates another way or define a new function
+      
+      // Example of directly accessing the dates if they're in your component state:
+      const selectedDates = document.querySelectorAll('.lli .date-text').length > 0 
+        ? Array.from(document.querySelectorAll('.lli .date-text')).map(el => {
+            // Extract date in YYYY-MM-DD format from displayed dates
+            const dateText = el.textContent.trim();
+            const dateParts = dateText.match(/\d{2}\/\d{2}\/\d{4}/);
+            if (dateParts) {
+              const [day, month, year] = dateParts[0].split('/');
+              return { date: `${year}-${month}-${day}` };
+            }
+            return null;
+          }).filter(d => d !== null)
+        : [];
       
       if (selectedDates.length === 0) {
         setError("Please select at least one date before submitting.");
         setLoading(false);
         return;
       }
-      
       // Format data for the API
       const apiData = {
         people: forms.map(form => ({
