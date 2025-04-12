@@ -290,14 +290,18 @@ const handleSubmit = async (e) => {
   } catch (error) {
     console.error("Error submitting the form:", error);
     
-    // More detailed error message
+    let errorMessage = "An error occurred while processing your request.";
+    
     if (error.response) {
-      setError(`Server error: ${error.response.status}. Please try again.`);
+      errorMessage += ` Server returned: ${error.response.status}`;
+      console.log("Response data:", error.response.data);
     } else if (error.request) {
-      setError("No response from server. Please check your connection.");
+      errorMessage += " No response received from server.";
     } else {
-      setError("An error occurred while processing your request. Please try again.");
+      errorMessage += ` ${error.message}`;
     }
+    
+    setError(errorMessage);
   } finally {
     setLoading(false);
   }

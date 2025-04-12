@@ -1,36 +1,42 @@
 const axios = require('axios');
 
 exports.handler = async function(event, context) {
+  console.log('Request path:', event.path);
+  console.log('Request method:', event.httpMethod);
+  
   try {
     // Get the path from the request
     let path = '';
+    
+    // Handle the path extraction
     if (event.path.includes('/api/')) {
-      path = '/' + event.path.split('/api/')[1];
+      path = event.path.replace('/api', '');
     } else {
       path = event.path.replace('/.netlify/functions/proxy', '');
-      if (!path.startsWith('/')) path = '/' + path;
     }
     
     const method = event.httpMethod.toLowerCase();
-    const API_ENDPOINT = 'http://13.48.71.148:8000';
+    
+    // Use port 443 (HTTPS) instead of 8000
+    const API_ENDPOINT = 'https://13.48.71.148';
     const url = `${API_ENDPOINT}${path}`;
     
     console.log(`Proxying ${method} request to: ${url}`);
     
-    // Parse the body for POST requests
+    // Log request details for debugging
+    console.log('Request headers:', event.headers);
+    
+    // Handle request body
     let body;
-    if (method === 'post' && event.body) {
+    if (event.body) {
       try {
         body = JSON.parse(event.body);
+        console.log('Parsed body:', body);
       } catch (e) {
         console.log('Error parsing body:', e);
         body = event.body;
       }
     }
-    
-    // Set proper response type based on path
-    const isDownloadRequest = path.includes('/download-file/');
-    const responseType = isDownloadRequest ? 'arraybuffer' : 'json';
     
     // Make the request to your API
     const response = await axios({
@@ -41,27 +47,24 @@ exports.handler = async function(event, context) {
         'Content-Type': 'application/json',
         'Accept': '*/*'
       },
-      responseType,
-      validateStatus: () => true,
-      timeout: 30000
+      validateStatus: () => true, // Accept all status codes
+      timeout: 60000, // Increased timeout to 60 seconds
     });
     
     console.log('Response status:', response.status);
-    console.log('Response type:', response.headers['content-type']);
+    console.log('Response headers:', response.headers);
     
     // For binary file responses
-    if (responseType === 'arraybuffer' || 
-        (response.headers['content-type'] && (
-         response.headers['content-type'].includes('application/pdf') || 
-         response.headers['content-type'].includes('application/vnd.openxmlformats') ||
-         response.headers['content-type'].includes('application/octet-stream')))) {
-      
+    if (response.headers['content-type'] && (
+      response.headers['content-type'].includes('application/vnd.openxmlformats') ||
+      response.headers['content-type'].includes('application/octet-stream') ||
+      response.headers['content-type'].includes('application/pdf')
+    )) {
       return {
         statusCode: response.status,
         headers: {
           'Content-Type': response.headers['content-type'],
-          'Content-Disposition': `attachment; filename="${path.split('/').pop()}"`,
-          'Access-Control-Allow-Origin': '*'
+          'Content-Disposition': response.headers['content-disposition'] || 'attachment',
         },
         body: Buffer.from(response.data).toString('base64'),
         isBase64Encoded: true
@@ -69,48 +72,47 @@ exports.handler = async function(event, context) {
     }
     
     // For JSON responses
-    if (response.data && typeof response.data === 'object') {
-      // Update file URLs to use the proxy
-      if (response.data.files && Array.isArray(response.data.files)) {
-        response.data.files = response.data.files.map(file => ({
-          ...file,
-          url: `/api${file.url}`
-        }));
-      }
+    if (response.headers['content-type'] && 
+        response.headers['content-type'].includes('application/json')) {
       
+      // Return the JSON as is
       return {
         statusCode: response.status,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
         },
-        body: JSON.stringify(response.data)
+        body: typeof response.data === 'object' ? 
+          JSON.stringify(response.data) : response.data
       };
     }
     
-    // Fallback for other response types
+    // Default case for other response types
     return {
       statusCode: response.status,
       headers: {
         'Content-Type': response.headers['content-type'] || 'text/plain',
-        'Access-Control-Allow-Origin': '*'
       },
-      body: typeof response.data === 'string' ? 
-        response.data : 
-        JSON.stringify(response.data)
+      body: typeof response.data === 'object' ? 
+        JSON.stringify(response.data) : 
+        (typeof response.data === 'string' ? response.data : '')
     };
     
   } catch (error) {
-    console.log('Proxy error:', error.message);
+    console.log('Proxy error:', error);
+    
+    // Detailed error logging
+    if (error.response) {
+      console.log('Error status:', error.response.status);
+      console.log('Error headers:', error.response.headers);
+      console.log('Error data:', error.response.data);
+    }
+    
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
       body: JSON.stringify({ 
         error: 'An error occurred connecting to the API',
-        details: error.message
+        message: error.message,
+        stack: error.stack
       })
     };
   }
