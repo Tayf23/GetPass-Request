@@ -18,7 +18,7 @@ exports.handler = async function(event, context) {
     const method = event.httpMethod.toLowerCase();
     
     // Use port 443 (HTTPS) instead of 8000
-    const API_ENDPOINT = 'https://13.48.71.148';
+    const API_ENDPOINT = 'http://13.48.71.148';
     const url = `${API_ENDPOINT}${path}`;
     
     console.log(`Proxying ${method} request to: ${url}`);
