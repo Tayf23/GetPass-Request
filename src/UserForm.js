@@ -166,37 +166,57 @@ export default function UserForm() {
 
       console.log("Dates:===========", apiData.dates)
       
-// For single dates, use blob response type directly
+// For single dates, we'll now handle them the same way as multiple dates
 if (selectedDates.length === 1) {
-  const response = await axios.post('/api/generate-getpass/', apiData, {
-    responseType: 'blob'
-  });
+  // First get JSON response with file URL
+  const response = await axios.post('/api/generate-getpass/', apiData);
   
-  // Determine file type and name based on Content-Type header
-  const contentType = response.headers['content-type'];
-  
-  // Extract the date for the filename
-  const datePart = selectedDates[0].date; // This should be in YYYY-MM-DD format
-  const [year, month, day] = datePart.split('-');
-  const formattedDate = `${day}-${month}-${year}`; // Convert to DD-MM-YYYY format
-  
-  let fileName;
-  if (contentType === 'application/pdf') {
-    fileName = `getpass_${formattedDate}.pdf`;
-    setSuccessMessage("PDF generated successfully!");
-  } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-    fileName = `getpass_${formattedDate}.docx`;
-    setSuccessMessage("Word document generated successfully!");
-  } else if (contentType === 'application/zip') {
-    fileName = `getpass_${formattedDate}.zip`;
-    setSuccessMessage("ZIP file with Word documents generated successfully!");
+  // Check if response contains files array
+  if (response.data && response.data.files && Array.isArray(response.data.files) && response.data.files.length > 0) {
+    const file = response.data.files[0]; // Get the first (and only) file
+    
+    try {
+      // Download the file individually as blob
+      const fileResponse = await axios.get(`/api${file.url}`, {
+        responseType: 'blob'
+      });
+      
+      // Download the file with the filename from the server
+      downloadFile(fileResponse.data, file.filename);
+      setSuccessMessage(`Document ${file.filename} downloaded successfully.`);
+    } catch (err) {
+      console.error(`Error downloading ${file.filename}:`, err);
+      setError(`Failed to download the document: ${err.message}`);
+    }
   } else {
-    fileName = `getpass_${formattedDate}`;
-    setSuccessMessage("Document generated successfully!");
+    // If we didn't get the expected response format, fallback to direct download
+    try {
+      const directResponse = await axios.post('/api/generate-getpass/', apiData, {
+        responseType: 'blob'
+      });
+      
+      // Extract the date for the filename
+      const datePart = selectedDates[0].date;
+      const [year, month, day] = datePart.split('-');
+      const formattedDate = `${day}-${month}-${year}`;
+      
+      // Set filename based on content type
+      const contentType = directResponse.headers['content-type'];
+      let fileName;
+      
+      if (contentType === 'application/pdf') {
+        fileName = `getpass_${formattedDate}.pdf`;
+      } else {
+        fileName = `getpass_${formattedDate}.docx`;
+      }
+      
+      downloadFile(directResponse.data, fileName);
+      setSuccessMessage(`Document ${fileName} downloaded successfully.`);
+    } catch (err) {
+      console.error("Error with direct download:", err);
+      setError(`Failed to download the document: ${err.message}`);
+    }
   }
-  
-  // Download the file
-  downloadFile(response.data, fileName);
 }
       // For multiple dates, use JSON response type
       else {
