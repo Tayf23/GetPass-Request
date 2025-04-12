@@ -219,14 +219,14 @@ exports.handler = async function(event, context) {
       },
       validateStatus: () => true, // Accept all status codes
       timeout: 60000, // Increased timeout to 60 seconds
-      // Use responseType 'arraybuffer' for download endpoints
-      responseType: path.includes('/download-file/') ? 'arraybuffer' : 'text',
+      // Use appropriate response type based on path
+      responseType: path.includes('/download-file/') ? 'arraybuffer' : 'json'
     });
     
     console.log('Response status:', response.status);
     console.log('Response headers:', response.headers);
     
-    // For binary file responses (direct file downloads)
+    // For binary file responses
     if (response.headers['content-type'] && (
       response.headers['content-type'].includes('application/vnd.openxmlformats') ||
       response.headers['content-type'].includes('application/octet-stream') ||
@@ -236,35 +236,22 @@ exports.handler = async function(event, context) {
         statusCode: response.status,
         headers: {
           'Content-Type': response.headers['content-type'],
-          'Content-Disposition': response.headers['content-disposition'] || 'attachment; filename="getpass.docx"',
+          'Content-Disposition': response.headers['content-disposition'] || 'attachment; filename="document.docx"',
         },
         body: Buffer.from(response.data).toString('base64'),
         isBase64Encoded: true
       };
     }
     
-    // Try to parse as JSON if the content type is application/json
+    // For JSON responses
     if (response.headers['content-type'] && response.headers['content-type'].includes('application/json')) {
-      let jsonData;
-      try {
-        jsonData = JSON.parse(response.data);
-      } catch (e) {
-        console.error("Failed to parse JSON response:", e);
-        return {
-          statusCode: response.status,
-          headers: {
-            'Content-Type': 'text/plain',
-          },
-          body: `Error parsing JSON: ${e.message}`
-        };
-      }
-      
       return {
         statusCode: response.status,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(jsonData)
+        body: typeof response.data === 'object' ? 
+              JSON.stringify(response.data) : response.data
       };
     }
     
@@ -274,7 +261,9 @@ exports.handler = async function(event, context) {
       headers: {
         'Content-Type': response.headers['content-type'] || 'text/plain',
       },
-      body: response.data
+      body: typeof response.data === 'object' ?
+            JSON.stringify(response.data) :
+            (typeof response.data === 'string' ? response.data : '')
     };
     
   } catch (error) {

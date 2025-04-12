@@ -150,20 +150,50 @@ export default function UserForm() {
         }))
       };
       
-      // First make a request to check if we'll get one file or multiple files
-      const checkResponse = await axios.post('/api/generate-getpass/', apiData);
-      
-      // If the response is JSON with files array, handle multiple files
-      if (checkResponse.data && checkResponse.data.files && Array.isArray(checkResponse.data.files)) {
-        const { files } = checkResponse.data;
+      // Different handling based on number of dates
+      if (selectedDates.length === 1) {
+        // For single dates, use blob response type directly (this works as you mentioned)
+        const response = await axios.post('/api/generate-getpass/', apiData, {
+          responseType: 'blob'
+        });
         
-        setSuccessMessage(`${files.length} documents generated successfully. Downloads starting...`);
+        // Determine file type and name based on Content-Type header
+        const contentType = response.headers['content-type'];
+        let fileName;
         
-        // Download each file with a delay to prevent browser blocking
-        files.forEach((file, index) => {
-          setTimeout(async () => {
+        if (contentType === 'application/pdf') {
+          fileName = 'getpass.pdf';
+          setSuccessMessage("PDF generated successfully!");
+        } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          fileName = 'getpass.docx';
+          setSuccessMessage("Word document generated successfully!");
+        } else if (contentType === 'application/zip') {
+          fileName = 'getpass_documents.zip';
+          setSuccessMessage("ZIP file with Word documents generated successfully!");
+        } else {
+          fileName = 'getpass_document';
+          setSuccessMessage("Document generated successfully!");
+        }
+        
+        // Download the file
+        downloadFile(response.data, fileName);
+      } 
+      // For multiple dates, use JSON response type
+      else {
+        // First get JSON response with file URLs
+        const response = await axios.post('/api/generate-getpass/', apiData);
+        
+        // Check if response contains files array
+        if (response.data && response.data.files && Array.isArray(response.data.files)) {
+          const { files } = response.data;
+          
+          setSuccessMessage(`${files.length} documents generated successfully. Downloads starting...`);
+          
+          // Download each file with a delay
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
             try {
-              // Get the file with responseType blob
+              // Download each file individually as blob
               const fileResponse = await axios.get(`/api${file.url}`, {
                 responseType: 'blob'
               });
@@ -171,45 +201,24 @@ export default function UserForm() {
               // Download the file
               downloadFile(fileResponse.data, file.filename);
               
-              // If this is the last file, clear the dates
-              if (index === files.length - 1) {
-                clearSelectedDates();
-                setForms([{ name: "", nationality: "", idNumber: "" }]);
+              // If we're on the last file, show a final success message
+              if (i === files.length - 1) {
+                setSuccessMessage(`All ${files.length} documents downloaded successfully.`);
               }
             } catch (err) {
               console.error(`Error downloading ${file.filename}:`, err);
             }
-          }, index * 1000); // 1 second delay between downloads
-        });
-      } else {
-        // For single file, make a new request with responseType: 'blob'
-        const response = await axios.post('/api/generate-getpass/', apiData, {
-          responseType: 'blob'
-        });
-        
-        // Get filename from the response headers if available
-        let fileName = 'getpass.docx';
-        const contentDisposition = response.headers['content-disposition'];
-        if (contentDisposition) {
-          const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
-          if (fileNameMatch) {
-            fileName = fileNameMatch[1];
+            
+            // Wait a bit between downloads to prevent browser blocking
+            if (i < files.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
           }
+        } else {
+          // Handle unexpected response format
+          console.error("Unexpected response format:", response.data);
+          setError("Received an invalid response from the server.");
         }
-        
-        // If no filename found in header, use the date
-        if (fileName === 'getpass.docx' && selectedDates.length > 0) {
-          const dateStr = selectedDates[0].date.replace(/-/g, '-');
-          fileName = `getpass_${dateStr}.docx`;
-        }
-        
-        // Download the file
-        downloadFile(response.data, fileName);
-        setSuccessMessage(`Document generated successfully!`);
-        
-        // Clear selected dates after successful download
-        clearSelectedDates();
-        setForms([{ name: "", nationality: "", idNumber: "" }]);
       }
     } catch (error) {
       console.error("Error submitting the form:", error);
