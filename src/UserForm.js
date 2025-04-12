@@ -225,8 +225,8 @@ const handleSubmit = async (e) => {
     
     // For single dates, use blob response type directly
     if (selectedDates.length === 1) {
-      const response = await axios.post('http://13.48.71.148/generate-getpass/', apiData, {
-        responseType: 'blob'
+      const response = await axios.post('/api/generate-getpass/', apiData, {
+    responseType: 'blob'
       });
       
       // Determine file type and name based on Content-Type header
