@@ -125,16 +125,19 @@ export default function UserForm() {
       return;
     }
     
-    if (selectedDates.length === 0) {
-      setError("Please select at least one date before submitting.");
-      return;
-    }
-    
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
     
     try {
+      const selectedDates = getSelectedDates();
+      
+      if (selectedDates.length === 0) {
+        setError("Please select at least one date before submitting.");
+        setLoading(false);
+        return;
+      }
+      
       // Format data for the API
       const apiData = {
         people: forms.map(form => ({
@@ -142,100 +145,71 @@ export default function UserForm() {
           nationality: form.nationality,
           id_number: form.idNumber
         })),
-        dates: selectedDates
+        dates: selectedDates.map(dateEntry => ({
+          date: dateEntry.date
+        }))
       };
       
-      console.log("Sending API data:", apiData);
-
-      // Make the API request
-      const response = await axios.post('/api/generate-getpass/', apiData, {
-        responseType: 'blob'
-      });
+      // First make a request to check if we'll get one file or multiple files
+      const checkResponse = await axios.post('/api/generate-getpass/', apiData);
       
-      // Check if the response is a blob
-      if (response.data instanceof Blob) {
-        const contentType = response.headers['content-type'];
+      // If the response is JSON with files array, handle multiple files
+      if (checkResponse.data && checkResponse.data.files && Array.isArray(checkResponse.data.files)) {
+        const { files } = checkResponse.data;
         
-        // Check if we received JSON despite asking for blob (happens with multiple files)
-        if (contentType === 'application/json') {
-          // Convert blob to text to parse as JSON
-          const jsonText = await response.data.text();
-          const jsonData = JSON.parse(jsonText);
-          
-          if (jsonData.files && Array.isArray(jsonData.files)) {
-            const { files } = jsonData;
-            
-            setSuccessMessage(`${files.length} documents generated successfully. Downloads starting...`);
-            
-            // Download each file with a delay to prevent browser blocking
-            let downloadCount = 0;
-            files.forEach((file, index) => {
-              setTimeout(async () => {
-                try {
-                  // Get the file
-                  const fileResponse = await axios.get(`/api${file.url}`, {
-                    responseType: 'blob'
-                  });
-                  
-                  // Download the file
-                  downloadFile(fileResponse.data, file.filename);
-                  
-                  // Track completed downloads
-                  downloadCount++;
-                  
-                  // Reset form after all downloads are complete
-                  if (downloadCount === files.length) {
-                    setForms([{ name: "", nationality: "", idNumber: "" }]);
-                    setSelectedDates([]);
-                  }
-                } catch (err) {
-                  console.error(`Error downloading ${file.filename}:`, err);
-                }
-              }, index * 1000); // 1 second delay between downloads
-            });
-          } else {
-            setError("Received unexpected JSON response");
-          }
-        } else {
-          // It's a direct file download (single file)
-          let fileName;
-          
-          // Try to get filename from Content-Disposition header
-          const disposition = response.headers['content-disposition'];
-          if (disposition && disposition.includes('filename=')) {
-            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-            const matches = filenameRegex.exec(disposition);
-            if (matches !== null && matches[1]) {
-              fileName = matches[1].replace(/['"]/g, '');
+        setSuccessMessage(`${files.length} documents generated successfully. Downloads starting...`);
+        
+        // Download each file with a delay to prevent browser blocking
+        files.forEach((file, index) => {
+          setTimeout(async () => {
+            try {
+              // Get the file with responseType blob
+              const fileResponse = await axios.get(`/api${file.url}`, {
+                responseType: 'blob'
+              });
+              
+              // Download the file
+              downloadFile(fileResponse.data, file.filename);
+              
+              // If this is the last file, clear the dates
+              if (index === files.length - 1) {
+                clearSelectedDates();
+                setForms([{ name: "", nationality: "", idNumber: "" }]);
+              }
+            } catch (err) {
+              console.error(`Error downloading ${file.filename}:`, err);
             }
-          }
-          
-          // If no filename found in header, generate one based on content type and date
-          if (!fileName) {
-            const date = selectedDates[0] ? selectedDates[0].date : new Date().toISOString().split('T')[0];
-            const formattedDate = date.replace(/-/g, '-');
-            
-            if (contentType === 'application/pdf') {
-              fileName = `getpass_${formattedDate}.pdf`;
-            } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-              fileName = `getpass_${formattedDate}.docx`;
-            } else {
-              fileName = `getpass_${formattedDate}.docx`;
-            }
-          }
-          
-          // Download the file
-          downloadFile(response.data, fileName);
-          setSuccessMessage(`Document '${fileName}' generated successfully!`);
-          
-          // Reset form after successful submission
-          setForms([{ name: "", nationality: "", idNumber: "" }]);
-          setSelectedDates([]);
-        }
+          }, index * 1000); // 1 second delay between downloads
+        });
       } else {
-        // Handle unexpected response format
-        console.error("Unexpected response format:", response);
-        setError("Received an invalid response from the server.");
+        // For single file, make a new request with responseType: 'blob'
+        const response = await axios.post('/api/generate-getpass/', apiData, {
+          responseType: 'blob'
+        });
+        
+        // Get filename from the response headers if available
+        let fileName = 'getpass.docx';
+        const contentDisposition = response.headers['content-disposition'];
+        if (contentDisposition) {
+          const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (fileNameMatch) {
+            fileName = fileNameMatch[1];
+          }
+        }
+        
+        // If no filename found in header, use the date
+        if (fileName === 'getpass.docx' && selectedDates.length > 0) {
+          const dateStr = selectedDates[0].date.replace(/-/g, '-');
+          fileName = `getpass_${dateStr}.docx`;
+        }
+        
+        // Download the file
+        downloadFile(response.data, fileName);
+        setSuccessMessage(`Document generated successfully!`);
+        
+        // Clear selected dates after successful download
+        clearSelectedDates();
+        setForms([{ name: "", nationality: "", idNumber: "" }]);
       }
     } catch (error) {
       console.error("Error submitting the form:", error);
