@@ -163,6 +163,8 @@ export default function UserForm() {
           date: dateEntry.date
         }))
       };
+
+      console.log("Dates:===========", apiData.dates)
       
       // Different handling based on number of dates
       if (selectedDates.length === 1) {
