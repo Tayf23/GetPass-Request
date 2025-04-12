@@ -116,49 +116,119 @@ export default function UserForm() {
     return isValid;
   };
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // // Handle form submission
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
     
-    // Check if all name and nationality inputs are Arabic
-    if (!validateArabicInputs()) {
-      setError("Please correct the errors in the form");
+  //   // Check if all name and nationality inputs are Arabic
+  //   if (!validateArabicInputs()) {
+  //     setError("Please correct the errors in the form");
+  //     return;
+  //   }
+    
+  //   setLoading(true);
+  //   setError(null);
+  //   setSuccessMessage(null);
+    
+  //   try {
+  //     const selectedDates = getSelectedDates();
+      
+  //     if (selectedDates.length === 0) {
+  //       setError("Please select at least one date before submitting.");
+  //       setLoading(false);
+  //       return;
+  //     }
+      
+  //     // Format data for the API
+  //     const apiData = {
+  //       people: forms.map(form => ({
+  //         name: form.name,
+  //         nationality: form.nationality,
+  //         id_number: form.idNumber
+  //       })),
+  //       dates: selectedDates.map(dateEntry => ({
+  //         date: dateEntry.date
+  //       }))
+  //     };
+      
+  //     // Send data to backend
+  //     // const response = await axios.post('/api/generate-getpass/', apiData, {
+  //       const response = await axios.post('http://13.48.71.148/generate-getpass/', apiData, {
+  //       responseType: 'blob' // Important for receiving binary data
+
+  //     });
+
+
+  //     // Determine file type and name based on Content-Type header
+  //     const contentType = response.headers['content-type'];
+  //     let fileName;
+      
+  //     if (contentType === 'application/pdf') {
+  //       fileName = 'getpass.pdf';
+  //       setSuccessMessage("PDF generated successfully!");
+  //     } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+  //       fileName = 'getpass.docx';
+  //       setSuccessMessage("Word document generated successfully! (PDF conversion was not available)");
+  //     } else if (contentType === 'application/zip') {
+  //       fileName = 'getpass_documents.zip';
+  //       setSuccessMessage("ZIP file with Word documents generated successfully! (PDF conversion was not available)");
+  //     } else {
+  //       fileName = 'getpass_document';
+  //       setSuccessMessage("Document generated successfully!");
+  //     }
+      
+  //     // Download the file
+  //     downloadFile(response.data, fileName);
+      
+  //   } catch (error) {
+  //     console.error("Error submitting the form:", error);
+  //     setError("An error occurred while processing your request. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // Handle form submission
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  // Check if all name and nationality inputs are Arabic
+  if (!validateArabicInputs()) {
+    setError("Please correct the errors in the form");
+    return;
+  }
+  
+  setLoading(true);
+  setError(null);
+  setSuccessMessage(null);
+  
+  try {
+    const selectedDates = getSelectedDates();
+    
+    if (selectedDates.length === 0) {
+      setError("Please select at least one date before submitting.");
+      setLoading(false);
       return;
     }
     
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
+    // Format data for the API
+    const apiData = {
+      people: forms.map(form => ({
+        name: form.name,
+        nationality: form.nationality,
+        id_number: form.idNumber
+      })),
+      dates: selectedDates.map(dateEntry => ({
+        date: dateEntry.date
+      }))
+    };
     
-    try {
-      const selectedDates = getSelectedDates();
-      
-      if (selectedDates.length === 0) {
-        setError("Please select at least one date before submitting.");
-        setLoading(false);
-        return;
-      }
-      
-      // Format data for the API
-      const apiData = {
-        people: forms.map(form => ({
-          name: form.name,
-          nationality: form.nationality,
-          id_number: form.idNumber
-        })),
-        dates: selectedDates.map(dateEntry => ({
-          date: dateEntry.date
-        }))
-      };
-      
-      // Send data to backend
-      const response = await axios.post('/api/generate-getpass/', apiData, {
-        // const response = await axios.post('http://localhost:8000/generate-getpass/', apiData, {
-        responseType: 'blob' // Important for receiving binary data
-
+    // For single dates, use blob response type directly
+    if (selectedDates.length === 1) {
+      const response = await axios.post('http://13.48.71.148/generate-getpass/', apiData, {
+        responseType: 'blob'
       });
-
-
+      
       // Determine file type and name based on Content-Type header
       const contentType = response.headers['content-type'];
       let fileName;
@@ -168,10 +238,10 @@ export default function UserForm() {
         setSuccessMessage("PDF generated successfully!");
       } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         fileName = 'getpass.docx';
-        setSuccessMessage("Word document generated successfully! (PDF conversion was not available)");
+        setSuccessMessage("Word document generated successfully!");
       } else if (contentType === 'application/zip') {
         fileName = 'getpass_documents.zip';
-        setSuccessMessage("ZIP file with Word documents generated successfully! (PDF conversion was not available)");
+        setSuccessMessage("ZIP file with Word documents generated successfully!");
       } else {
         fileName = 'getpass_document';
         setSuccessMessage("Document generated successfully!");
@@ -179,14 +249,59 @@ export default function UserForm() {
       
       // Download the file
       downloadFile(response.data, fileName);
+    } 
+    // For multiple dates, handle JSON response with file links
+    else {
+      // First request with regular response type to get JSON
+      const response = await axios.post('http://13.48.71.148/generate-getpass/', apiData);
       
-    } catch (error) {
-      console.error("Error submitting the form:", error);
-      setError("An error occurred while processing your request. Please try again.");
-    } finally {
-      setLoading(false);
+      // Check if response contains files array
+      if (response.data && response.data.files && Array.isArray(response.data.files)) {
+        const { files } = response.data;
+        const baseUrl = response.data.baseUrl || 'http://13.48.71.148';
+        
+        setSuccessMessage(`${files.length} documents generated successfully. Downloads starting...`);
+        
+        // Download each file with a delay to prevent browser blocking
+        files.forEach((file, index) => {
+          setTimeout(async () => {
+            try {
+              // Construct full URL if needed
+              const fileUrl = file.url.startsWith('http') ? file.url : `${baseUrl}${file.url}`;
+              
+              // Get the file
+              const fileResponse = await axios.get(fileUrl, {
+                responseType: 'blob'
+              });
+              
+              // Download the file
+              downloadFile(fileResponse.data, file.filename);
+            } catch (err) {
+              console.error(`Error downloading ${file.filename}:`, err);
+            }
+          }, index * 1000); // 1 second delay between downloads
+        });
+      } else {
+        // Handle unexpected response format
+        console.error("Unexpected response format:", response.data);
+        setError("Received an invalid response from the server.");
+      }
     }
-  };
+  } catch (error) {
+    console.error("Error submitting the form:", error);
+    
+    // More detailed error message
+    if (error.response) {
+      setError(`Server error: ${error.response.status}. Please try again.`);
+    } else if (error.request) {
+      setError("No response from server. Please check your connection.");
+    } else {
+      setError("An error occurred while processing your request. Please try again.");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="input-container">
