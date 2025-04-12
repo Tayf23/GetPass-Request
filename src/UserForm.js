@@ -221,6 +221,8 @@ export default function UserForm() {
           date: dateEntry.date
         }))
       };
+
+      console.log("Api data", apiData, apiData.dates);
       
       // Make the API request - always use blob response type for direct file downloads
       const response = await axios.post('/api/generate-getpass/', apiData, {
