@@ -253,12 +253,12 @@ const handleSubmit = async (e) => {
     // For multiple dates, handle JSON response with file links
     else {
       // First request with regular response type to get JSON
-      const response = await axios.post('http://13.48.71.148/generate-getpass/', apiData);
+      const response = await axios.post('/api/generate-getpass/', apiData);
       
       // Check if response contains files array
       if (response.data && response.data.files && Array.isArray(response.data.files)) {
         const { files } = response.data;
-        const baseUrl = response.data.baseUrl || 'http://13.48.71.148';
+        const baseUrl = response.data.baseUrl || '/api';
         
         setSuccessMessage(`${files.length} documents generated successfully. Downloads starting...`);
         
