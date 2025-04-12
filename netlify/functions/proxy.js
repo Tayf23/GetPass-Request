@@ -6,31 +6,31 @@ exports.handler = async function(event, context) {
     let path = '';
     if (event.path.includes('/api/')) {
       path = '/' + event.path.split('/api/')[1];
-    } else if (event.path.includes('/download-file/')) {
-      // For download requests, preserve the full path
-      path = event.path;
     } else {
       path = event.path.replace('/.netlify/functions/proxy', '');
       if (!path.startsWith('/')) path = '/' + path;
     }
     
     const method = event.httpMethod.toLowerCase();
-    const API_ENDPOINT = 'http://13.48.71.148';
+    const API_ENDPOINT = 'http://13.48.71.148:8000';
     const url = `${API_ENDPOINT}${path}`;
     
     console.log(`Proxying ${method} request to: ${url}`);
     
-    // Handle request body
+    // Parse the body for POST requests
     let body;
-    try {
-      body = event.body ? JSON.parse(event.body) : undefined;
-    } catch (e) {
-      console.log('Error parsing body:', e);
-      body = event.body;
+    if (method === 'post' && event.body) {
+      try {
+        body = JSON.parse(event.body);
+      } catch (e) {
+        console.log('Error parsing body:', e);
+        body = event.body;
+      }
     }
     
-    // Set appropriate response type based on path
-    const responseType = path.includes('/download-file/') ? 'arraybuffer' : 'json';
+    // Set proper response type based on path
+    const isDownloadRequest = path.includes('/download-file/');
+    const responseType = isDownloadRequest ? 'arraybuffer' : 'json';
     
     // Make the request to your API
     const response = await axios({
@@ -41,7 +41,7 @@ exports.handler = async function(event, context) {
         'Content-Type': 'application/json',
         'Accept': '*/*'
       },
-      responseType: responseType,
+      responseType,
       validateStatus: () => true,
       timeout: 30000
     });
@@ -49,7 +49,7 @@ exports.handler = async function(event, context) {
     console.log('Response status:', response.status);
     console.log('Response type:', response.headers['content-type']);
     
-    // For binary file responses (when downloading a file)
+    // For binary file responses
     if (responseType === 'arraybuffer' || 
         (response.headers['content-type'] && (
          response.headers['content-type'].includes('application/pdf') || 
@@ -60,49 +60,54 @@ exports.handler = async function(event, context) {
         statusCode: response.status,
         headers: {
           'Content-Type': response.headers['content-type'],
-          'Content-Disposition': response.headers['content-disposition'] || 'attachment'
+          'Content-Disposition': `attachment; filename="${path.split('/').pop()}"`,
+          'Access-Control-Allow-Origin': '*'
         },
         body: Buffer.from(response.data).toString('base64'),
         isBase64Encoded: true
       };
     }
     
-    // For JSON responses (including file lists)
-    if (response.headers['content-type'] && 
-        response.headers['content-type'].includes('application/json')) {
-      
+    // For JSON responses
+    if (response.data && typeof response.data === 'object') {
       // Update file URLs to use the proxy
       if (response.data.files && Array.isArray(response.data.files)) {
         response.data.files = response.data.files.map(file => ({
           ...file,
-          url: `/api${file.url}` // Prefix with /api to route through proxy
+          url: `/api${file.url}`
         }));
       }
       
       return {
         statusCode: response.status,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
         },
         body: JSON.stringify(response.data)
       };
     }
     
-    // For any other response type
+    // Fallback for other response types
     return {
       statusCode: response.status,
       headers: {
-        'Content-Type': response.headers['content-type'] || 'text/plain'
+        'Content-Type': response.headers['content-type'] || 'text/plain',
+        'Access-Control-Allow-Origin': '*'
       },
-      body: typeof response.data === 'object' ? 
-        JSON.stringify(response.data) : 
-        response.data.toString()
+      body: typeof response.data === 'string' ? 
+        response.data : 
+        JSON.stringify(response.data)
     };
     
   } catch (error) {
     console.log('Proxy error:', error.message);
     return {
       statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ 
         error: 'An error occurred connecting to the API',
         details: error.message
