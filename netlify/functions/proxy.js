@@ -17,7 +17,7 @@ exports.handler = async function(event, context) {
 
     const method = event.httpMethod.toLowerCase();
     
-    // Use port 443 (HTTPS) instead of 8000
+    // Use HTTP instead of HTTPS for AWS server without SSL
     const API_ENDPOINT = 'http://13.48.71.148';
     const url = `${API_ENDPOINT}${path}`;
     
@@ -49,35 +49,82 @@ exports.handler = async function(event, context) {
       },
       validateStatus: () => true, // Accept all status codes
       timeout: 60000, // Increased timeout to 60 seconds
-      responseType: path.includes('/download-file/') ? 'arraybuffer' : 'json', // Use arraybuffer for file downloads
+      // Always use arraybuffer for binary response types to ensure proper handling
+      responseType: path.includes('/download-file/') || path.includes('/generate-getpass/') ? 'arraybuffer' : 'json',
     });
     
     console.log('Response status:', response.status);
     console.log('Response headers:', response.headers);
     
-    // For binary file responses (direct file downloads)
-    if (response.headers['content-type'] && (
-      response.headers['content-type'].includes('application/vnd.openxmlformats') ||
-      response.headers['content-type'].includes('application/octet-stream') ||
-      response.headers['content-type'].includes('application/pdf')
-    )) {
+    // Detect content type to determine if it's a binary file or JSON
+    const contentType = response.headers['content-type'] || '';
+    const contentDisposition = response.headers['content-disposition'] || '';
+    
+    // For binary file responses
+    if (contentType.includes('application/vnd.openxmlformats') || 
+        contentType.includes('application/octet-stream') || 
+        contentType.includes('application/pdf')) {
+        
+      // Extract filename from Content-Disposition header if available
+      let filename = 'document.docx';
+      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1];
+      } else if (path.includes('generate-getpass')) {
+        // If generating a getpass document and no filename is provided, create one with date
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
+        filename = `getpass_${dateStr}.docx`;
+      }
+      
+      console.log('Returning binary file with filename:', filename);
+      
       return {
         statusCode: response.status,
         headers: {
-          'Content-Type': response.headers['content-type'],
-          'Content-Disposition': response.headers['content-disposition'] || 'attachment; filename="document.docx"',
+          'Content-Type': contentType,
+          'Content-Disposition': `attachment; filename="${filename}"`,
         },
         body: Buffer.from(response.data).toString('base64'),
         isBase64Encoded: true
       };
     }
     
-    // For JSON responses that contain file URLs (multiple files)
-    if (response.headers['content-type'] && 
-        response.headers['content-type'].includes('application/json')) {
-      
-      // If the JSON contains file URLs, pass it through unmodified
-      // The frontend will handle downloading the files
+    // Check if the response might be JSON but was received as arraybuffer
+    if ((contentType.includes('application/json') || path.includes('/generate-getpass/')) && 
+         response.data instanceof ArrayBuffer) {
+      try {
+        // Try to convert arraybuffer to JSON
+        const jsonStr = Buffer.from(response.data).toString('utf8');
+        const jsonData = JSON.parse(jsonStr);
+        
+        console.log('Successfully parsed JSON from arraybuffer:', jsonData);
+        
+        return {
+          statusCode: response.status,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(jsonData)
+        };
+      } catch (e) {
+        console.log('Error parsing JSON from arraybuffer, treating as binary:', e);
+        
+        // If parsing failed, it's likely a binary file despite the content type
+        return {
+          statusCode: response.status,
+          headers: {
+            'Content-Type': contentType || 'application/octet-stream',
+            'Content-Disposition': 'attachment; filename="getpass.docx"',
+          },
+          body: Buffer.from(response.data).toString('base64'),
+          isBase64Encoded: true
+        };
+      }
+    }
+    
+    // Handle application/json responses that are already parsed
+    if (contentType.includes('application/json')) {
       return {
         statusCode: response.status,
         headers: {
@@ -92,7 +139,7 @@ exports.handler = async function(event, context) {
     return {
       statusCode: response.status,
       headers: {
-        'Content-Type': response.headers['content-type'] || 'text/plain',
+        'Content-Type': contentType || 'text/plain',
       },
       body: typeof response.data === 'object' ?
             JSON.stringify(response.data) :
