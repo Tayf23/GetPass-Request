@@ -14,6 +14,11 @@ function formatDateForAPI(date) {
   return `${year}-${month}-${day}`;
 }
 
+// Function to clear selected dates from localStorage
+export function clearSelectedDates() {
+  localStorage.removeItem('selectedDates');
+}
+
 function EnterDate() {
   const [selectedDates, setSelectedDates] = useState([]);
   
@@ -29,7 +34,7 @@ function EnterDate() {
           dateObject: new Date(item.dateObject)
         }));
         // Sort the dates after loading
-        const sortedDates = [...datesWithObjects].sort((a, b) => 
+        const sortedDates = [...datesWithObjects].sort((a, b) =>
           a.dateObject.getTime() - b.dateObject.getTime()
         );
         setSelectedDates(sortedDates);
