@@ -19,19 +19,19 @@ export default function UserForm() {
   // State for success message
   const [successMessage, setSuccessMessage] = useState(null);
   
+  // State for selected dates
+  const [selectedDates, setSelectedDates] = useState([]);
+  
   // Function to check if text contains only Arabic characters
   const isArabicOnly = (text) => {
     const arabicPattern = /^[\u0600-\u06FF\s]+$/;
     return arabicPattern.test(text);
   };
   
-  // Get selected dates from localStorage (set by EnterDate component)
-  const getSelectedDates = () => {
-    const datesFromStorage = localStorage.getItem('selectedDates');
-    if (datesFromStorage) {
-      return JSON.parse(datesFromStorage);
-    }
-    return [];
+  // Handle date changes from EnterDate component
+  const handleDatesChange = (dates) => {
+    setSelectedDates(dates);
+    console.log("Dates updated:", dates);
   };
 
   // Handle input changes
@@ -116,78 +116,6 @@ export default function UserForm() {
     return isValid;
   };
 
-  // // Handle form submission
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-    
-  //   // Check if all name and nationality inputs are Arabic
-  //   if (!validateArabicInputs()) {
-  //     setError("Please correct the errors in the form");
-  //     return;
-  //   }
-    
-  //   setLoading(true);
-  //   setError(null);
-  //   setSuccessMessage(null);
-    
-  //   try {
-  //     const selectedDates = getSelectedDates();
-      
-  //     if (selectedDates.length === 0) {
-  //       setError("Please select at least one date before submitting.");
-  //       setLoading(false);
-  //       return;
-  //     }
-      
-  //     // Format data for the API
-  //     const apiData = {
-  //       people: forms.map(form => ({
-  //         name: form.name,
-  //         nationality: form.nationality,
-  //         id_number: form.idNumber
-  //       })),
-  //       dates: selectedDates.map(dateEntry => ({
-  //         date: dateEntry.date
-  //       }))
-  //     };
-      
-  //     // Send data to backend
-  //     // const response = await axios.post('/api/generate-getpass/', apiData, {
-  //       const response = await axios.post('http://13.48.71.148/generate-getpass/', apiData, {
-  //       responseType: 'blob' // Important for receiving binary data
-
-  //     });
-
-
-  //     // Determine file type and name based on Content-Type header
-  //     const contentType = response.headers['content-type'];
-  //     let fileName;
-      
-  //     if (contentType === 'application/pdf') {
-  //       fileName = 'getpass.pdf';
-  //       setSuccessMessage("PDF generated successfully!");
-  //     } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-  //       fileName = 'getpass.docx';
-  //       setSuccessMessage("Word document generated successfully! (PDF conversion was not available)");
-  //     } else if (contentType === 'application/zip') {
-  //       fileName = 'getpass_documents.zip';
-  //       setSuccessMessage("ZIP file with Word documents generated successfully! (PDF conversion was not available)");
-  //     } else {
-  //       fileName = 'getpass_document';
-  //       setSuccessMessage("Document generated successfully!");
-  //     }
-      
-  //     // Download the file
-  //     downloadFile(response.data, fileName);
-      
-  //   } catch (error) {
-  //     console.error("Error submitting the form:", error);
-  //     setError("An error occurred while processing your request. Please try again.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -197,19 +125,16 @@ export default function UserForm() {
       return;
     }
     
+    if (selectedDates.length === 0) {
+      setError("Please select at least one date before submitting.");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     setSuccessMessage(null);
     
     try {
-      const selectedDates = getSelectedDates();
-      
-      if (selectedDates.length === 0) {
-        setError("Please select at least one date before submitting.");
-        setLoading(false);
-        return;
-      }
-      
       // Format data for the API
       const apiData = {
         people: forms.map(form => ({
@@ -217,15 +142,12 @@ export default function UserForm() {
           nationality: form.nationality,
           id_number: form.idNumber
         })),
-        dates: selectedDates.map(dateEntry => ({
-          date: dateEntry.date
-        }))
+        dates: selectedDates
       };
       
-      console.log("Api data", apiData, apiData.dates);
+      console.log("Sending API data:", apiData);
 
-
-      // Make the API request - always use blob response type for direct file downloads
+      // Make the API request
       const response = await axios.post('/api/generate-getpass/', apiData, {
         responseType: 'blob'
       });
@@ -261,12 +183,10 @@ export default function UserForm() {
                   // Track completed downloads
                   downloadCount++;
                   
-                  // // Clear selected dates after all downloads are complete
+                  // Reset form after all downloads are complete
                   if (downloadCount === files.length) {
-                  //   clearSelectedDates();
-                    
-                    // Reset form after successful submission
                     setForms([{ name: "", nationality: "", idNumber: "" }]);
+                    setSelectedDates([]);
                   }
                 } catch (err) {
                   console.error(`Error downloading ${file.filename}:`, err);
@@ -308,11 +228,9 @@ export default function UserForm() {
           downloadFile(response.data, fileName);
           setSuccessMessage(`Document '${fileName}' generated successfully!`);
           
-          // Clear selected dates after successful download
-          // clearSelectedDates();
-          
           // Reset form after successful submission
           setForms([{ name: "", nationality: "", idNumber: "" }]);
+          setSelectedDates([]);
         }
       } else {
         // Handle unexpected response format
@@ -407,14 +325,16 @@ export default function UserForm() {
           </button>
         </div>
         
-        <EnterDate />
+        <EnterDate onDatesChange={handleDatesChange} />
         
         <button 
           type="submit" 
           className="submit-btn" 
-          disabled={loading || forms.some((_, index) => 
-            inputErrors[index].name || inputErrors[index].nationality
-          )}
+          disabled={loading || 
+                   selectedDates.length === 0 || 
+                   forms.some((_, index) => 
+                     inputErrors[index].name || inputErrors[index].nationality
+                   )}
         >
           {loading ? "Processing..." : "Generate Document"}
         </button>

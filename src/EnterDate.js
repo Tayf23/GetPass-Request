@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getDay, format } from "date-fns";
@@ -14,74 +14,55 @@ function formatDateForAPI(date) {
   return `${year}-${month}-${day}`;
 }
 
-// Function to clear selected dates from localStorage
-export function clearSelectedDates() {
-  localStorage.removeItem('selectedDates');
-}
-
-function EnterDate() {
+function EnterDate({ onDatesChange }) {
   const [selectedDates, setSelectedDates] = useState([]);
   
-  // Load any previously selected dates from localStorage
-  // useEffect(() => {
-  //   const savedDates = localStorage.getItem('selectedDates');
-  //   if (savedDates) {
-  //     try {
-  //       const parsedDates = JSON.parse(savedDates);
-  //       // Convert string dates back to Date objects
-  //       const datesWithObjects = parsedDates.map(item => ({
-  //         ...item,
-  //         dateObject: new Date(item.dateObject)
-  //       }));
-  //       // Sort the dates after loading
-  //       const sortedDates = [...datesWithObjects].sort((a, b) =>
-  //         a.dateObject.getTime() - b.dateObject.getTime()
-  //       );
-  //       setSelectedDates(sortedDates);
-  //     } catch (e) {
-  //       console.error("Error parsing saved dates:", e);
-  //     }
-  //   }
-  // }, []);
-  
-  // Save selected dates to localStorage whenever they change
-  // useEffect(() => {
-  //   // Create a copy that can be serialized
-  //   const datesToSave = selectedDates.map(item => ({
-  //     ...item,
-  //     dateObject: item.dateObject.toISOString()
-  //   }));
-  //   localStorage.setItem('selectedDates', JSON.stringify(datesToSave));
-  // }, [selectedDates]);
-  
+  // Notify parent component whenever dates change
+  const updateDates = (newDates) => {
+    setSelectedDates(newDates);
+    
+    // Format dates for API and pass to parent
+    const formattedDates = newDates.map(item => ({
+      date: item.date
+    }));
+    
+    onDatesChange(formattedDates);
+  };
+
   const handleDateChange = (date) => {
     if (date) {
       // Check if date is already selected
       const alreadySelected = selectedDates.some(
         item => item.dateObject &&
-               item.dateObject.getFullYear() === date.getFullYear() &&
-               item.dateObject.getMonth() === date.getMonth() &&
-               item.dateObject.getDate() === date.getDate()
+        item.dateObject.getFullYear() === date.getFullYear() &&
+        item.dateObject.getMonth() === date.getMonth() &&
+        item.dateObject.getDate() === date.getDate()
       );
       
       if (!alreadySelected) {
         // Store just the date in YYYY-MM-DD format for the API to avoid timezone issues
         const newDateEntry = {
           date: formatDateForAPI(date),
-          dateObject: date //  Keep a Date object for UI display
+          dateObject: date // Keep a Date object for UI display
         };
         
         // Add the new date and sort the array
-        const updatedDates = [...selectedDates, newDateEntry].sort((a, b) => 
+        const updatedDates = [...selectedDates, newDateEntry].sort((a, b) =>
           a.dateObject.getTime() - b.dateObject.getTime()
         );
-        setSelectedDates(updatedDates);
+        
+        updateDates(updatedDates);
       }
     }
   };
   
   const removeDate = (index) => {
-    setSelectedDates(selectedDates.filter((_, i) => i !== index));
+    const updatedDates = selectedDates.filter((_, i) => i !== index);
+    updateDates(updatedDates);
+  };
+  
+  const clearAllDates = () => {
+    updateDates([]);
   };
   
   const isWeekend = (date) => {
@@ -91,7 +72,19 @@ function EnterDate() {
   
   return (
     <div className="date-picker-container">
-      <h4 className="h4">Select Dates for GetPass</h4>
+      <div className="date-header">
+        <h4 className="h4">Select Dates for GetPass</h4>
+        {selectedDates.length > 0 && (
+          <button 
+            type="button"
+            className="clear-all-btn"
+            onClick={clearAllDates}
+          >
+            Clear All Dates
+          </button>
+        )}
+      </div>
+      
       <DatePicker
         selected={null}
         onChange={handleDateChange}
@@ -104,27 +97,28 @@ function EnterDate() {
       />
       
       <h4 className="h4">Selected Dates:</h4>
-      <ul className="ull">
-        {selectedDates.map((dateEntry, index) => (
-          <li key={index} className="lli">
-            <div className="date-text">
-              📅 {dateEntry.dateObject && format(dateEntry.dateObject, "EEEE, dd/MM/yyyy", { locale: ar })}
-            </div>
-            <button
-              className="delete-btn"
-              onClick={() => removeDate(index)}
-              title="حذف"
-              aria-label="Delete date"
-            > 
-              ❌ 
-            </button>
-          </li>
-        ))}
-      </ul>
-      
-      {selectedDates.length === 0 && 
+      {selectedDates.length > 0 ? (
+        <ul className="ull">
+          {selectedDates.map((dateEntry, index) => (
+            <li key={index} className="lli">
+              <div className="date-text">
+                📅 {dateEntry.dateObject && format(dateEntry.dateObject, "EEEE, dd/MM/yyyy", { locale: ar })}
+              </div>
+              <button
+                className="delete-btn"
+                onClick={() => removeDate(index)}
+                type="button"
+                title="حذف"
+                aria-label="Delete date"
+              >
+                ❌
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
         <p className="date-warning">Please select at least one date for the GetPass document</p>
-      }
+      )}
     </div>
   );
 }
